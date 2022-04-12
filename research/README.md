@@ -1,3 +1,3 @@
 # Camo-transfer
-## dir: data
-This directory contains the data files that is needed to reference and train on. 
+## dir: research
+This directory contains papers that we used to concpetualize this project and understand the structure needed to build this model. 
