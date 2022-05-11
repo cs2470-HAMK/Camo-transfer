@@ -6,9 +6,13 @@ from GAN import *
 import glob
 from PIL import Image
 
+# +
 import tensorflow as tf
+# tf.debugging.set_log_device_placement(True)
+
 import tensorflow_datasets as tfds # pip install tensorflow_datasets, etc.
 from tensorflow_examples.models.pix2pix import pix2pix # pip install -q git+https://github.com/tensorflow/examples.git
+# -
 
 import os
 import time
@@ -103,3 +107,31 @@ for epoch in range(EPOCHS):
 
   print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                       time.time()-start))
+
+# +
+
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+# -
+
+"/job:localhost/replica:0/task:0/device:GPU:0"
+
+a = tf.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+b = tf.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+c = tf.matmul(a, b)
+
+gpus = tf.config.list_logical_devices('GPU')
+print(gpus)
+
+# +
+from tensorflow.python.client import device_lib
+
+def get_available_gpus():
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos if x.device_type == 'GPU']
+
+
+# -
+
+get_available_gpus()
+
+
