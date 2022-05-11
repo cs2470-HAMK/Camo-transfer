@@ -1,2 +1,3 @@
 # Camo-transfer
-This repo contains the framework for a GANs model that transforms images of scenes to a camouflage pattern that would blend well into the environment 
+## dir: research
+This directory contains papers that we used to concpetualize this project and understand the structure needed to build this model. 
