@@ -26,18 +26,18 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-# landscape_path = 'data/Landscape_Images' 
-# camo_path = 'data/camo_subset_raw'
+landscape_path = 'data/Landscape_Images' 
+camo_path = 'data/camo_subset_raw'
 
 
-# benchmark_path = 'data/Benchmark_Images'
+benchmark_path = 'data/Benchmark_Images'
 
-research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
-landscape_path = research_path + '/Landscape_Images' # 'NoSky_Landscape
-camo_path = research_path + '/camo_subset_raw' # research/camo_processed
+# research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
+# landscape_path = research_path + '/Landscape_Images' # 'NoSky_Landscape
+# camo_path = research_path + '/camo_subset_raw' # research/camo_processed
 
 
-benchmark_path = research_path + '/Benchmark_Images'
+# benchmark_path = research_path + '/Benchmark_Images'
 
 # -
 
@@ -53,7 +53,7 @@ BATCH_SIZE = 1
 # IMG_HEIGHT = 256
 
 ### Data:
-LIMIT = 20 # num of landscape and camo images
+LIMIT = 100 # num of landscape and camo images
 train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
 train_camo, test_camo = data_preprocessor(camo_path, limit=LIMIT)
 
@@ -162,8 +162,42 @@ if not os.path.exists(benchmark_images_log_dir):
     os.makedirs(benchmark_images_log_dir)
 print(f'Images written to: {benchmark_images_log_dir}')
 
-
 # ### Model Fitting:
+
+# +
+n_epochs=40
+camo_GAN = CamoGAN(OUTPUT_CHANNELS, 
+                       params['reconst'], params['ls_disc'], params['color_d'],
+                      train_summary_writer)
+    
+for epoch in range(n_epochs):
+    start = time.time()
+
+    n = 0
+    data_size = len(train_landscapes)
+    for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
+        step = epoch*data_size + i
+        camo_GAN.train_step(image_x, image_y, step)
+        if n % 10 == 0:
+            print ('.', end='')
+            n += 1
+
+    clear_output(wait=True)
+    # Using a consistent image (sample_horse) so that the progress of the model
+    # is clearly visible.
+    camo_GAN.generate_images(sample_landscape)
+    camo_GAN.generate_patched_landscape(sample_landscape)
+
+    if (epoch + 1) % 5 == 0:
+        # Save generated results:
+        print("Saving results")
+        camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
+
+        print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
+                                                          time.time()-start))
+
+
+# -
 
 def fit_hyperparameter_setting(weights, n_epochs=40):
     """
@@ -180,35 +214,56 @@ def fit_hyperparameter_setting(weights, n_epochs=40):
         Saved training progress images
     """
     camo_GAN = CamoGAN(OUTPUT_CHANNELS, 
-                       weights['reconst'], weights['ls_disc'], weights['color_d'])
+                       weights['reconst'], weights['ls_disc'], weights['color_d'],
+                      train_summary_writer)
     
     for epoch in range(n_epochs):
-      start = time.time()
+        start = time.time()
 
-    n = 0
-    data_size = len(train_landscapes)
-    for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
-      step = epoch*data_size + i
-      camo_GAN.train_step(image_x, image_y, step)
-      if n % 10 == 0:
-        print ('.', end='')
-      n += 1
+        n = 0
+        data_size = len(train_landscapes)
+        for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
+            step = epoch*data_size + i
+            camo_GAN.train_step(image_x, image_y, step)
+            if n % 10 == 0:
+                print ('.', end='')
+                n += 1
 
-      clear_output(wait=True)
-      # Using a consistent image (sample_horse) so that the progress of the model
-      # is clearly visible.
-      camo_GAN.generate_images(sample_landscape)
-      camo_GAN.generate_patched_landscape(sample_landscape)
+        clear_output(wait=True)
+        # Using a consistent image (sample_horse) so that the progress of the model
+        # is clearly visible.
+        camo_GAN.generate_images(sample_landscape)
+        camo_GAN.generate_patched_landscape(sample_landscape)
 
-      if (epoch + 1) % 5 == 0:
+    if (epoch + 1) % 5 == 0:
         # Save generated results:
         print("Saving results")
         camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
 
-      print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
+        print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                           time.time()-start))
 
 
+# +
+# !ln -sf /opt/bin/nvidia-smi /usr/bin/nvidia-smi
+# !pip install gputil
+# !pip install psutil
+# !pip install humanize
+
+import psutil
+import humanize
+import os
+import GPUtil as GPU
+
+GPUs = GPU.getGPUs()
+# XXX: only one GPU on Colab and isn’t guaranteed
+gpu = GPUs[0]
+def printm():
+    process = psutil.Process(os.getpid())
+    print("Gen RAM Free: " + humanize.naturalsize(psutil.virtual_memory().available), " |     Proc size: " + humanize.naturalsize(process.memory_info().rss))
+    print("GPU RAM Free: {0:.0f}MB | Used: {1:.0f}MB | Util {2:3.0f}% | Total     {3:.0f}MB".format(gpu.memoryFree, gpu.memoryUsed, gpu.memoryUtil*100, gpu.memoryTotal))
+printm()
+# -
 
 fit_hyperparameter_setting(params, n_epochs=100)
 
@@ -228,7 +283,7 @@ fit_hyperparameter_setting(params, n_epochs=100)
 #                 'ls_disc_weight': ls_disc_w,
 #                 'color_d_weight': color_d_w
 #             }
-            
+
 #             fit_hyperparameter_setting(weights, n_epochs=100)
 
 # ### Testing GPU:
