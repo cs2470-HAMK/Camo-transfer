@@ -1,3 +1,6 @@
 results/
 data/Landscape_Images/
 data/camo_subset_raw/
+tensorboard_logs/*
+.ipynb_checkpoints/
+__pycache__/
