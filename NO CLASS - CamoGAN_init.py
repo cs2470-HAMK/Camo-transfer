@@ -27,8 +27,8 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-landscape_path = 'data/Landscape_Images' 
-camo_path = 'data/camo_subset_raw'
+landscape_path = '../research/Landscape_Images' # research/NoSky_Landscape
+camo_path = '../research/camo_subset_raw' # research/camo_processed
 
 
 benchmark_path = 'data/Benchmark_Images'
