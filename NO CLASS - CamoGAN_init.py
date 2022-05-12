@@ -27,8 +27,8 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-landscape_path = '../research/Landscape_Images' # research/NoSky_Landscape
-camo_path = '../research/camo_subset_raw' # research/camo_processed
+landscape_path = 'data/Landscape_Images' 
+camo_path = 'data/camo_subset_raw'
 
 
 benchmark_path = 'data/Benchmark_Images'
@@ -80,7 +80,7 @@ plt.show()
 
 # ### Benchmark Images:
 
-benchmark_landscapes, _ = data_preprocessor(benchmark_path, shuffle=False, limit=None)
+benchmark_landscapes, _ = data_preprocessor(benchmark_path, train_split=1.0, shuffle=False, limit=None)
 
 benchmark_landscapes = benchmark_landscapes.cache().batch(BATCH_SIZE)
 
