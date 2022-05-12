@@ -104,7 +104,7 @@ class CamoGAN(tf.keras.Model):
         plt.savefig(filename)
         
     def save_benchmark_results(self, epoch, benchmark_landscapes, save_image_path, num_benchmarks=10):
-        plt.figure(figsize=(20, 20))
+        fig = plt.figure(figsize=(20, 20))
         benchmark_camo_results_path = f'{save_image_path}/epoch_{epoch}_camo.png'
         for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
             fake_camo = self.generator_g(benchmark)
@@ -114,20 +114,22 @@ class CamoGAN(tf.keras.Model):
             plt.imshow(fake_camo[0] * 0.5 + 0.5)
             plt.axis('off')
         
+        plt.close(fig)
         plt.savefig(benchmark_camo_results_path)
 
-        plt.figure(figsize=(20, 20))
-        benchmark_patched_results_path = f'{save_image_path}/epoch_{epoch}_camo.png'
-        for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
-            fake_camo = self.generator_g(benchmark)
-            patched_landscape = cutout_and_replace(benchmark, fake_camo, cutout_size=64)
+        # fig = plt.figure(figsize=(20, 20))
+        # benchmark_patched_results_path = f'{save_image_path}/epoch_{epoch}_patched.png'
+        # for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
+        #     fake_camo = self.generator_g(benchmark)
+        #     patched_landscape = cutout_and_replace(benchmark, fake_camo, cutout_size=64)
 
-            plt.subplot(1, num_benchmarks, i+1)
-            # getting the pixel values between [0, 1] to plot it.
-            plt.imshow(patched_landscape[0] * 0.5 + 0.5)
-            plt.axis('off')
+        #     plt.subplot(1, num_benchmarks, i+1)
+        #     # getting the pixel values between [0, 1] to plot it.
+        #     plt.imshow(patched_landscape[0] * 0.5 + 0.5)
+        #     plt.axis('off')
 
-        plt.savefig(benchmark_patched_results_path)
+        # plt.close(fig)
+        # plt.savefig(benchmark_patched_results_path)
         
         
     def train_step(self, real_x, real_y, step_i, log_freq=20):

@@ -27,11 +27,15 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-landscape_path = 'data/Landscape_Images' 
-camo_path = 'data/camo_subset_raw'
+# landscape_path = 'data/Landscape_Images' 
+# camo_path = 'data/camo_subset_raw'
+
+research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
+landscape_path = research_path + '/Landscape_Images' # 'NoSky_Landscape
+camo_path = research_path + '/camo_subset_raw' # research/camo_processed
 
 
-benchmark_path = 'data/Benchmark_Images'
+benchmark_path = research_path + '/Benchmark_Images'
 # -
 
 print(f'Landscape images read from: {landscape_path};\n\
