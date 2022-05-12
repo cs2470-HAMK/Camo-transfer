@@ -1,6 +1,6 @@
 # Camo-transfer
 
-This directory contains papers that we used to concpetualize this project and understand the structure needed to build this model. The goal here is to build out a model that is able to take in any landscape image and output a reasonable camouflage pattern that a potential user could apply to tasks and projects of interests. Much of the work is parceled into separate colab notebooks that collectively produce a model output. 
+The goal here is to build out a model that is able to take in any landscape image and output a reasonable camouflage pattern that a potential user could apply to tasks and projects of interests. Much of the work is parceled into separate colab notebooks that collectively produce a model output. 
 
 ### Data
 
