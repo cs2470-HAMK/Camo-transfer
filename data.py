@@ -7,7 +7,7 @@ import os
 import glob
 from PIL import Image
 
-def data_preprocessor(file_path, limit=None):
+def data_preprocessor(file_path, train_split=0.8, test_split=0.2, shuffle=True, shuffle_size=296, limit=None):
 
     #create dataframe to store image paths and images:
 
@@ -29,8 +29,6 @@ def data_preprocessor(file_path, limit=None):
     interim_inputs = [j for i, j in enumerate(inputs)]
     inp_reshape = tf.reshape(interim_inputs, (-1, 256, 256, 3))
     train_imgs = np.asarray(inp_reshape, dtype= np.float32)
-
-    # train_imgs = tf.random.shuffle(final_inputs)
 
     og_images = []
     for tensor in train_imgs:
@@ -55,12 +53,8 @@ def data_preprocessor(file_path, limit=None):
     image_dataset = tf.data.Dataset.from_tensor_slices(tensor_converted_images)
 
     ds_size = tf.data.experimental.cardinality(image_dataset)
-    train_split=0.8
-    test_split=0.2
-    shuffle_size=296
-
-    Shuffle=True
-    if Shuffle:
+    ds = image_dataset
+    if shuffle:
     # Specify seed to always have the same split distribution between runs
         ds = image_dataset.shuffle(shuffle_size, seed=12)
 
@@ -70,15 +64,4 @@ def data_preprocessor(file_path, limit=None):
     train_ds = ds.take(train_size)   
     test_ds = ds.take(test_size)
 
-    train_size_lst = []
-    for img in train_ds:
-        train_size_lst.append(img)
-
-    train_imgs_arrays = []
-    for tensor_images in train_size_lst:
-        array_img = np.asarray(tensor_images)
-        train_imgs_arrays.append(array_img)
-
-    # dark_skin_sample = train_imgs_arrays[20]
-
-    return train_ds, test_ds # , dark_skin_sample
+    return train_ds, test_ds
