@@ -47,7 +47,7 @@ class CamoGAN(tf.keras.Model):
         
         
     def get_name(self):
-        return f"reconst_{self.reconst_weight}_ls_disc_{self.ls_disc_weight}_color_d_{color_d_weight}"
+        return f"reconst_{self.reconst_weight}_ls_disc_{self.ls_disc_weight}_color_d_{self.color_d_weight}"
     
     
     def generate_images(self, test_input):
