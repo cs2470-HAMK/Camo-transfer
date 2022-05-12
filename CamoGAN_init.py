@@ -216,20 +216,20 @@ fit_hyperparameter_setting(params, n_epochs=100)
 
 # ### Hyperparameter search:
 
-reconst_weights = [0.5, 1, 5]
-ls_disc_weights = [1, 5] # add 0
-color_d_weights = [1, 5, 10] # add 0
+# reconst_weights = [0.5, 1, 5]
+# ls_disc_weights = [1, 5] # add 0
+# color_d_weights = [1, 5, 10] # add 0
 
-for reconst_w in reconst_weights:
-    for ls_disc_w in ls_disc_weights:
-        for color_d_w in color_d_weights:
-            weights = {
-                'reconst_weight': reconst_w, 
-                'ls_disc_weight': ls_disc_w,
-                'color_d_weight': color_d_w
-            }
+# for reconst_w in reconst_weights:
+#     for ls_disc_w in ls_disc_weights:
+#         for color_d_w in color_d_weights:
+#             weights = {
+#                 'reconst_weight': reconst_w, 
+#                 'ls_disc_weight': ls_disc_w,
+#                 'color_d_weight': color_d_w
+#             }
             
-            fit_hyperparameter_setting(weights, n_epochs=100)
+#             fit_hyperparameter_setting(weights, n_epochs=100)
 
 # ### Testing GPU:
 
