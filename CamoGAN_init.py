@@ -26,11 +26,19 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-landscape_path = 'data/Landscape_Images' 
-camo_path = 'data/camo_subset_raw'
+# landscape_path = 'data/Landscape_Images' 
+# camo_path = 'data/camo_subset_raw'
 
 
-benchmark_path = 'data/Benchmark_Images'
+# benchmark_path = 'data/Benchmark_Images'
+
+research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
+landscape_path = research_path + '/Landscape_Images' # 'NoSky_Landscape
+camo_path = research_path + '/camo_subset_raw' # research/camo_processed
+
+
+benchmark_path = research_path + '/Benchmark_Images'
+
 # -
 
 print(f'Landscape images read from: {landscape_path};\n\
@@ -177,7 +185,8 @@ def fit_hyperparameter_setting(weights, n_epochs=40):
     for epoch in range(n_epochs):
       start = time.time()
 
-      n = 0
+    n = 0
+    data_size = len(train_landscapes)
     for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
       step = epoch*data_size + i
       camo_GAN.train_step(image_x, image_y, step)
