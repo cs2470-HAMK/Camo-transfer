@@ -101,10 +101,10 @@ plt.title('Sample Camo')
 plt.imshow(sample_camo[0] * 0.5 + 0.5)
 # -
 
+# ### Model Name: Important for Logging:
+
 ### Model:
 OUTPUT_CHANNELS = 3
-
-# ### Model Name: Important for Logging:
 
 model_name = 'cyclegan' # 'patched'; # patched_dewatermarked'; # 'patched_dewatermarked_colordist'; # 'patched_dewatermarked_colordist_deskied'
 
@@ -158,7 +158,7 @@ for epoch in range(EPOCHS):
   n = 0
   for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
     step = epoch*data_size + i
-    cycle_GAN.train_step(image_x, image_y, step, reconst_weight=reconst_weight)
+    cycle_GAN.train_step(image_x, image_y, step)
     if n % 10 == 0:
       print ('.', end='')
     n += 1
@@ -168,15 +168,12 @@ for epoch in range(EPOCHS):
   # is clearly visible.
   cycle_GAN.generate_images(sample_landscape)
 
-  if (epoch + 1) % 2 == 0:
-    
+  if (epoch + 1) % 5 == 0:
     cycle_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
-
+    print(f"Saved image for epoch {epoch + 1}")
   print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                       time.time()-start))
 
-  if epoch > 17:
-    break
 # -
 
 # %tensorboard --logdir tensorboard_logs

@@ -118,20 +118,20 @@ class CycleGAN(tf.keras.Model):
             plt.axis('off')
         
         plt.savefig(benchmark_results_path)
-        
+
 #         plt.figure(figsize=(20, 20))
 #         for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
 #             benchmark_results_path = f'{save_image_path}/epoch_{epoch+1}_patched.png'
 #             fake_camo = self.generator_g(benchmark)
 #             patched_landscape = cutout_and_replace(benchmark, fake_camo, cutout_size=64)
-            
+
 #             plt.subplot(1, num_benchmarks, i+1)
 #             # getting the pixel values between [0, 1] to plot it.
 #             plt.imshow(patched_landscape[0] * 0.5 + 0.5)
 #             plt.axis('off')
 
 
-    def train_step(self, real_x, real_y, step_i, reconst_weight=10, train_summary_writer=None, log_freq=20):
+    def train_step(self, real_x, real_y, step_i, log_freq=20):
         """
         log_freq - after how many images is the loss logged
         """
@@ -163,11 +163,11 @@ class CycleGAN(tf.keras.Model):
             gen_g_loss = generator_loss(disc_fake_y)
             gen_f_loss = generator_loss(disc_fake_x)
 
-            total_cycle_loss = calc_cycle_loss(real_x, cycled_x, reconst_weight) + calc_cycle_loss(real_y, cycled_y, reconst_weight)
+            total_cycle_loss = calc_cycle_loss(real_x, cycled_x, self.reconst_weight) + calc_cycle_loss(real_y, cycled_y, self.reconst_weight)
 
             # Total generator loss = adversarial loss + cycle loss
-            total_gen_g_loss = gen_g_loss + total_cycle_loss + identity_loss(real_y, same_y, reconst_weight)
-            total_gen_f_loss = gen_f_loss + total_cycle_loss + identity_loss(real_x, same_x, reconst_weight)
+            total_gen_g_loss = gen_g_loss + total_cycle_loss + identity_loss(real_y, same_y, self.reconst_weight)
+            total_gen_f_loss = gen_f_loss + total_cycle_loss + identity_loss(real_x, same_x, self.reconst_weight)
 
             disc_x_loss = discriminator_loss(disc_real_x, disc_fake_x)
             disc_y_loss = discriminator_loss(disc_real_y, disc_fake_y)
