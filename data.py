@@ -7,7 +7,7 @@ import os
 import glob
 from PIL import Image
 
-def data_preprocessor(file_path, train_split=0.8, test_split=0.2, shuffle=True, shuffle_size=296, limit=None):
+def data_preprocessor(file_path, train_split=0.8, test_split=0.2, sort=False, shuffle=True, shuffle_size=296, limit=None):
 
     #create dataframe to store image paths and images:
 
@@ -30,6 +30,11 @@ def data_preprocessor(file_path, train_split=0.8, test_split=0.2, shuffle=True, 
     inp_reshape = tf.reshape(interim_inputs, (-1, 256, 256, 3))
     train_imgs = np.asarray(inp_reshape, dtype= np.float32)
 
+    if sort:
+        train_pixs = [img[0,0,0] for img in train_imgs]
+        sorted_idxs = np.argsort(train_pixs)
+        train_imgs = train_imgs[sorted_idxs]
+    
     og_images = []
     for tensor in train_imgs:
         og_images.append(tensor)
