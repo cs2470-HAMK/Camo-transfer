@@ -1,6 +1,6 @@
 from data import *
 from transformations import *
-from GAN import *
+from CamoGAN import *
 
 # images
 import glob
@@ -29,10 +29,13 @@ AUTOTUNE = tf.data.AUTOTUNE
 landscape_path = 'data/Landscape_Images' 
 camo_path = 'data/camo_subset_raw'
 
-save_image_path = 'results'
+
+benchmark_path = 'data/Benchmark_Images'
 # -
 
-print(landscape_path, camo_path, save_image_path)
+print(f'Landscape images read from: {landscape_path};\n\
+Camouflage images read from: {camo_path};\n\
+Benchmark landscape images read from: {benchmark_path}')
 
 # ### Reading in Data:
 
@@ -42,7 +45,7 @@ BATCH_SIZE = 1
 # IMG_HEIGHT = 256
 
 ### Data:
-LIMIT = 500 # num of landscape and camo images
+LIMIT = 20 # num of landscape and camo images
 train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
 train_camo, test_camo = data_preprocessor(camo_path, limit=LIMIT)
 
@@ -51,24 +54,116 @@ test_landscapes = test_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 train_camos = train_camo.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 test_camos = test_camo.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
+# +
+num_camos = 10
+plt.figure(figsize=(20, 20))
+for i, camo in enumerate(train_camos.take(num_camos)):
+    plt.subplot(1, num_camos, i+1)
+    # getting the pixel values between [0, 1] to plot it.
+    plt.imshow(camo[0] * 0.5 + 0.5)
+    plt.axis('off')
+
+plt.show()
+
+# +
+num_landscapes = 10
+plt.figure(figsize=(20, 20))
+for i, landscape in enumerate(train_landscapes.take(num_landscapes)):
+    plt.subplot(1, num_landscapes, i+1)
+    # getting the pixel values between [0, 1] to plot it.
+    plt.imshow(landscape[0] * 0.5 + 0.5)
+    plt.axis('off')
+
+plt.show()
+# -
+
 # ### Benchmark Images:
 
+benchmark_landscapes, _ = data_preprocessor(benchmark_path, shuffle=False, limit=None)
+
+benchmark_landscapes = benchmark_landscapes.cache().batch(BATCH_SIZE)
+
+# +
+num_benchmarks = 10
+plt.figure(figsize=(20, 20))
+for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
+    plt.subplot(1, num_benchmarks, i+1)
+    # getting the pixel values between [0, 1] to plot it.
+    plt.imshow(benchmark[0] * 0.5 + 0.5)
+    plt.axis('off')
+
+plt.show()
+
+# +
 sample_landscape = next(iter(train_landscapes))
 sample_camo = next(iter(train_camos))
 
-# ### Model Fitting:
+plt.subplot(121)
+plt.title('Sample Landscape')
+plt.imshow(sample_landscape[0] * 0.5 + 0.5)
+
+plt.subplot(122)
+plt.title('Sample Camo')
+plt.imshow(sample_camo[0] * 0.5 + 0.5)
+# -
+
+# ## Model Name: Important for logging
+
+names = ['cyclegan', 'patched', 'patched_dewatermarked', 'patched_dewatermarked_colordist', 'patched_dewatermarked_colordist_deskied']
+model_name = names[4] # 'patched_dewatermarked_colordist_deskied'
 
 ### Model:
 OUTPUT_CHANNELS = 3
 
+params = {
+    'reconst': 0.5,
+    'ls_disc': 1, 
+    'color_d': 5 
+}
+
+# ### Tensorboard Logger:
+
+# %load_ext tensorboard
+
+# +
+if not os.path.exists('tensorboard_logs'):
+    os.makedirs('tensorboard_logs')
+
+tb_log_dir = 'tensorboard_logs/gradient_tape'
+if not os.path.exists(tb_log_dir):
+    os.makedirs(tb_log_dir)
+    
+model_log_dir = f'{tb_log_dir}/{model_name}'
+if not os.path.exists(model_log_dir):
+    os.makedirs(model_log_dir)
+    
+param_str = "_".join([f'{param}_{val}' for param, val in params.items()])
+model_param_log_dir = f'{model_log_dir}/{param_str}'
+if not os.path.exists(model_param_log_dir):
+    os.makedirs(model_param_log_dir)
+    
+train_log_dir = model_param_log_dir
+
+print(f'Tensorboard logs written to: {train_log_dir}')
+# -
+
+train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+
+benchmark_images_log_dir = f'{train_log_dir}/progress_images'
+if not os.path.exists(benchmark_images_log_dir):
+    os.makedirs(benchmark_images_log_dir)
+print(f'Images written to: {benchmark_images_log_dir}')
+
+
+# ### Model Fitting:
 
 def fit_hyperparameter_setting(weights, n_epochs=40):
     """
     Parameters:
         weights : {
-            'reconst_weight': ..., # single scalar value
-            'ls_disc_weight': ...,
-            'color_d_weight': ...
+            'reconst': ..., # single scalar value
+            'ls_disc': ...,
+            'color_d': ...
         }
     
     Returns: @TODO
@@ -76,17 +171,19 @@ def fit_hyperparameter_setting(weights, n_epochs=40):
         Saved camo_GAN model? :
         Saved training progress images
     """
-    camo_GAN = CamoGAN(OUTPUT_CHANNELS, weights['reconst_weight'], weights['ls_disc_weight'], weights['color_d_weight'])
+    camo_GAN = CamoGAN(OUTPUT_CHANNELS, 
+                       weights['reconst'], weights['ls_disc'], weights['color_d'])
     
     for epoch in range(n_epochs):
       start = time.time()
 
       n = 0
-      for image_x, image_y in tf.data.Dataset.zip((train_landscapes, train_camos)):
-        camo_GAN.train_step(image_x, image_y)
-        if n % 10 == 0:
-          print ('.', end='')
-        n += 1
+    for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
+      step = epoch*data_size + i
+      camo_GAN.train_step(image_x, image_y, step)
+      if n % 10 == 0:
+        print ('.', end='')
+      n += 1
 
       clear_output(wait=True)
       # Using a consistent image (sample_horse) so that the progress of the model
@@ -95,28 +192,24 @@ def fit_hyperparameter_setting(weights, n_epochs=40):
       camo_GAN.generate_patched_landscape(sample_landscape)
 
       if (epoch + 1) % 5 == 0:
-            # @TODO: checkpoint manager
-    #     ckpt_save_path = ckpt_manager.save()
-    #     print ('Saving checkpoint for epoch {} at {}'.format(epoch+1,
-    #                                                          ckpt_save_path))
-
         # Save generated results:
-        print("SAVING RESULTS")
-        for i, test_ls in enumerate(test_landscapes.take(10)):
-          # Naming convention: hyperparameters_epoch_i.png
-          fc_pl_filename = f'{save_image_path}/reconst_{camo_GAN.reconst_weight}_lsdisc_{camo_GAN.ls_disc_weight}_color_{camo_GAN.color_d_weight}_fc_pl_epoch_{epoch+1}_{i}.png'
-
-          camo_GAN.save_generated_results(test_ls, fc_pl_filename)
+        print("Saving results")
+        camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
 
       print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                           time.time()-start))
 
 
+
+fit_hyperparameter_setting(params, n_epochs=100)
+
+# # @TODO: not implemented
+
 # ### Hyperparameter search:
 
-reconst_weights = [0.1, 1, 5]
+reconst_weights = [0.5, 1, 5]
 ls_disc_weights = [1, 5] # add 0
-color_d_weights = [0, 5, 1, 10] # add 0
+color_d_weights = [1, 5, 10] # add 0
 
 for reconst_w in reconst_weights:
     for ls_disc_w in ls_disc_weights:
