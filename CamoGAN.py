@@ -104,7 +104,7 @@ class CamoGAN(tf.keras.Model):
         plt.savefig(filename)
         
     def save_benchmark_results(self, epoch, benchmark_landscapes, save_image_path, num_benchmarks=10):
-        fig = plt.figure(figsize=(20, 20))
+        plt.figure(figsize=(20, 20))
         benchmark_camo_results_path = f'{save_image_path}/epoch_{epoch}_camo.png'
         for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
             fake_camo = self.generator_g(benchmark)
@@ -114,22 +114,23 @@ class CamoGAN(tf.keras.Model):
             plt.imshow(fake_camo[0] * 0.5 + 0.5)
             plt.axis('off')
         
-        plt.close(fig)
+        # plt.close(fig)
         plt.savefig(benchmark_camo_results_path)
+        print("Saved at: ", benchmark_camo_results_path)
 
         # fig = plt.figure(figsize=(20, 20))
-        # benchmark_patched_results_path = f'{save_image_path}/epoch_{epoch}_patched.png'
-        # for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
-        #     fake_camo = self.generator_g(benchmark)
-        #     patched_landscape = cutout_and_replace(benchmark, fake_camo, cutout_size=64)
+        benchmark_patched_results_path = f'{save_image_path}/epoch_{epoch}_patched.png'
+        for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
+            fake_camo = self.generator_g(benchmark)
+            patched_landscape = cutout_and_replace(benchmark, fake_camo, cutout_size=64)
 
-        #     plt.subplot(1, num_benchmarks, i+1)
-        #     # getting the pixel values between [0, 1] to plot it.
-        #     plt.imshow(patched_landscape[0] * 0.5 + 0.5)
-        #     plt.axis('off')
+            plt.subplot(1, num_benchmarks, i+1)
+            # getting the pixel values between [0, 1] to plot it.
+            plt.imshow(patched_landscape[0] * 0.5 + 0.5)
+            plt.axis('off')
 
         # plt.close(fig)
-        # plt.savefig(benchmark_patched_results_path)
+        plt.savefig(benchmark_patched_results_path)
         
         
     def train_step(self, real_x, real_y, step_i, log_freq=20):
@@ -160,6 +161,7 @@ class CamoGAN(tf.keras.Model):
             color_dist = 0
             if self.color_d_weight != 0:
                 color_dist = calc_color_distance(real_x, fake_y)
+                print(f"COLOR_DIST during step {step_i}: {color_dist}")
 
             # calculate the loss
             gen_g_loss = generator_loss(disc_fake_y)+ self.ls_disc_weight*generator_loss(disc_fake_x) + self.color_d_weight*color_dist# Want to fool both discriminators 
@@ -173,6 +175,7 @@ class CamoGAN(tf.keras.Model):
             disc_y_loss = discriminator_loss(disc_real_y, disc_fake_y)
             
             if self.train_summary_writer and (step_i+1) % log_freq == 0:
+                print(f"Writing to tensorboard, step_i:  {step_i+1}")
                 with self.train_summary_writer.as_default():
                     tf.summary.scalar('total_gen_g_loss', total_gen_g_loss, step=step_i)
 
@@ -355,5 +358,5 @@ def calc_color_distance(image,camo_gen):
     distance = np.linalg.norm(color - sort_cc[i]) 
     cam_list.append(distance) 
     
-  return cam_list
+  return np.mean(cam_list)
 

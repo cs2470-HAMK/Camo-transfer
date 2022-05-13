@@ -66,4 +66,4 @@ def calc_color_distance(image,camo_gen):
     distance = np.linalg.norm(color - sort_cc[i]) 
     cam_list.append(distance) 
     
-  return cam_list
+  return np.mean(cam_list)

@@ -26,18 +26,17 @@ AUTOTUNE = tf.data.AUTOTUNE
 # ### Data and Output Paths:
 
 # +
-landscape_path = 'data/Landscape_Images' 
-camo_path = 'data/camo_subset_raw'
+# landscape_path = 'data/Landscape_Images' 
+# camo_path = 'data/camo_subset_raw'
 
 
-benchmark_path = 'data/Benchmark_Images'
+# benchmark_path = 'data/Benchmark_Images'
 
-# research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
-# landscape_path = research_path + '/Landscape_Images' # 'NoSky_Landscape
-# camo_path = research_path + '/camo_subset_raw' # research/camo_processed
+research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
+landscape_path = research_path +  '/NoSky_Landscape' # '/Landscape_Images' 
+camo_path = research_path + '/camo_processed' # '/camo_subset_raw' 
 
-
-# benchmark_path = research_path + '/Benchmark_Images'
+benchmark_path = research_path + '/Benchmark_Images'
 
 # -
 
@@ -55,7 +54,7 @@ BATCH_SIZE = 1
 ### Data:
 LIMIT = 100 # num of landscape and camo images
 train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
-train_camo, test_camo = data_preprocessor(camo_path, limit=LIMIT)
+train_camo, test_camo = data_preprocessor(camo_path, image_type='*.png', limit=LIMIT)
 
 train_landscapes = train_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 test_landscapes = test_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
@@ -87,7 +86,7 @@ plt.show()
 
 # ### Benchmark Images:
 
-benchmark_landscapes, _ = data_preprocessor(benchmark_path, shuffle=False, limit=None)
+benchmark_landscapes, _ = data_preprocessor(benchmark_path, sort=True, train_split=1.0, shuffle=False, limit=None)
 
 benchmark_landscapes = benchmark_landscapes.cache().batch(BATCH_SIZE)
 
@@ -118,15 +117,16 @@ plt.imshow(sample_camo[0] * 0.5 + 0.5)
 # ## Model Name: Important for logging
 
 names = ['cyclegan', 'patched', 'patched_dewatermarked', 'patched_dewatermarked_colordist', 'patched_dewatermarked_colordist_deskied']
-model_name = names[4] # 'patched_dewatermarked_colordist_deskied'
+model_name = names[3]
+model_name = 'patched_dewatermarked_deskied'
 
 ### Model:
 OUTPUT_CHANNELS = 3
 
 params = {
-    'reconst': 0.5,
-    'ls_disc': 1, 
-    'color_d': 5 
+    'reconst': 0.2,
+    'ls_disc': 5, 
+    'color_d': 0
 }
 
 # ### Tensorboard Logger:
@@ -134,10 +134,12 @@ params = {
 # %load_ext tensorboard
 
 # +
-if not os.path.exists('tensorboard_logs'):
-    os.makedirs('tensorboard_logs')
+working_dir = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/Camo-transfer'
+tensorboard_dir = working_dir + '/tensorboard_logs'
+if not os.path.exists(tensorboard_dir):
+    os.makedirs(tensorboard_dir)
 
-tb_log_dir = 'tensorboard_logs/gradient_tape'
+tb_log_dir = tensorboard_dir + '/gradient_tape'
 if not os.path.exists(tb_log_dir):
     os.makedirs(tb_log_dir)
     
@@ -173,33 +175,33 @@ camo_GAN = CamoGAN(OUTPUT_CHANNELS,
 for epoch in range(n_epochs):
     start = time.time()
 
-    n = 0
     data_size = len(train_landscapes)
     for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
         step = epoch*data_size + i
         camo_GAN.train_step(image_x, image_y, step)
-        if n % 10 == 0:
+        if i % 10 == 0:
             print ('.', end='')
-            n += 1
 
-    clear_output(wait=True)
+    # clear_output(wait=True)
     # Using a consistent image (sample_horse) so that the progress of the model
     # is clearly visible.
+    """ Remove for local runs
     camo_GAN.generate_images(sample_landscape)
     camo_GAN.generate_patched_landscape(sample_landscape)
+    """
 
     if (epoch + 1) % 5 == 0:
         # Save generated results:
         print("Saving results")
         camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
 
-        print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
-                                                          time.time()-start))
+    print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
+                                                        time.time()-start))
 
 
 # -
 
-"""
+'''
 def fit_hyperparameter_setting(weights, n_epochs=40):
     """
     Parameters:
@@ -246,7 +248,7 @@ def fit_hyperparameter_setting(weights, n_epochs=40):
 
 
 fit_hyperparameter_setting(params, n_epochs=100)
-"""
+'''
 
 
 # # @TODO: not implemented
