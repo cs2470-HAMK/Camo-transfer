@@ -19,7 +19,7 @@ def data_preprocessor(file_path, train_split=0.8, test_split=0.2, image_type='*.
     df = df.rename(columns={df.columns[0]: "image_id"})
     df = df.rename(columns={df.columns[1]: "image_path"})
     if limit:
-      offset = 100
+      offset = 0
       df = df[offset:offset+limit]
     df["image"] = df['image_path'].map(lambda x: np.asarray(Image.open(x).resize((256, 256))))
 

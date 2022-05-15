@@ -33,16 +33,17 @@ AUTOTUNE = tf.data.AUTOTUNE
 # benchmark_path = 'data/Benchmark_Images'
 
 research_path = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/research'
-landscape_path = research_path +  '/NoSky_Landscape' # '/Landscape_Images' 
+nosky_landscape_path = research_path +  '/NoSky_Landscape' # '/Landscape_Images' 
+sky_landscape_path = research_path +  '/Landscape_Images' 
 camo_path = research_path + '/camo_processed' # '/camo_subset_raw' 
 
 benchmark_path = research_path + '/Benchmark_Images'
 
 # -
 
-print(f'Landscape images read from: {landscape_path};\n\
-Camouflage images read from: {camo_path};\n\
-Benchmark landscape images read from: {benchmark_path}')
+# print(f'Landscape images read from: {landscape_path};\n\
+# Camouflage images read from: {camo_path};\n\
+# Benchmark landscape images read from: {benchmark_path}')
 
 # ### Reading in Data:
 
@@ -52,12 +53,12 @@ BATCH_SIZE = 1
 # IMG_HEIGHT = 256
 
 ### Data:
-LIMIT = 100 # num of landscape and camo images
-train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
+LIMIT = 300 # num of landscape and camo images
+# train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
 train_camo, test_camo = data_preprocessor(camo_path, image_type='*.png', limit=LIMIT)
 
-train_landscapes = train_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-test_landscapes = test_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+# train_landscapes = train_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+# test_landscapes = test_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 train_camos = train_camo.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 test_camos = test_camo.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
@@ -73,6 +74,8 @@ for i, camo in enumerate(train_camos.take(num_camos)):
 plt.show()
 
 # +
+
+""" 
 num_landscapes = 10
 plt.figure(figsize=(20, 20))
 for i, landscape in enumerate(train_landscapes.take(num_landscapes)):
@@ -82,6 +85,7 @@ for i, landscape in enumerate(train_landscapes.take(num_landscapes)):
     plt.axis('off')
 
 plt.show()
+ """
 # -
 
 # ### Benchmark Images:
@@ -102,38 +106,41 @@ for i, benchmark in enumerate(benchmark_landscapes.take(num_benchmarks)):
 plt.show()
 
 # +
-sample_landscape = next(iter(train_landscapes))
 sample_camo = next(iter(train_camos))
+""" 
+sample_landscape = next(iter(train_landscapes))
 
 plt.subplot(121)
 plt.title('Sample Landscape')
 plt.imshow(sample_landscape[0] * 0.5 + 0.5)
-
+ """
 plt.subplot(122)
 plt.title('Sample Camo')
 plt.imshow(sample_camo[0] * 0.5 + 0.5)
 # -
 
 # ## Model Name: Important for logging
-
+''' # Now done during hyperparameter search
 names = ['cyclegan', 'patched', 'patched_dewatermarked', 'patched_dewatermarked_colordist', 'patched_dewatermarked_colordist_deskied']
 model_name = names[3]
-model_name = 'patched_dewatermarked_deskied'
+model_name = 'color_dist_test' # 'patched_dewatermarked_deskied'
+'''
 
 ### Model:
 OUTPUT_CHANNELS = 3
-
+""" # Now set for hyperparameter search
 params = {
-    'reconst': 0.2,
+    'reconst': 0.5,
     'ls_disc': 5, 
-    'color_d': 0
-}
+    'color_d': 1
+} """
 
 # ### Tensorboard Logger:
 
 # %load_ext tensorboard
 
 # +
+""" Moved to within hyperparameter search. @TODO: refactor
 working_dir = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/Camo-transfer'
 tensorboard_dir = working_dir + '/tensorboard_logs'
 if not os.path.exists(tensorboard_dir):
@@ -154,49 +161,135 @@ if not os.path.exists(model_param_log_dir):
     
 train_log_dir = model_param_log_dir
 
-print(f'Tensorboard logs written to: {train_log_dir}')
+print(f'Tensorboard logs written to: {train_log_dir}') """
 # -
-
+""" 
 train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 
 benchmark_images_log_dir = f'{train_log_dir}/progress_images'
 if not os.path.exists(benchmark_images_log_dir):
     os.makedirs(benchmark_images_log_dir)
 print(f'Images written to: {benchmark_images_log_dir}')
-
+ """
 # ### Model Fitting:
+def get_model_name(landscape_path, camo_path, params, patched=True):
+    name_components = ['patched']
 
-# +
-n_epochs=40
-camo_GAN = CamoGAN(OUTPUT_CHANNELS, 
-                       params['reconst'], params['ls_disc'], params['color_d'],
-                      train_summary_writer)
+    if 'processed' in camo_path:
+        name_components.append('dewatermarked')
     
-for epoch in range(n_epochs):
-    start = time.time()
+    if params['color_d'] == 0:
+        name_components.append('colordist')
+    
+    if 'NoSky' in landscape_path:
+        name_components.append('deskied')
 
-    data_size = len(train_landscapes)
-    for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
-        step = epoch*data_size + i
-        camo_GAN.train_step(image_x, image_y, step)
-        if i % 10 == 0:
-            print ('.', end='')
+    return '_'.join(name_components)
 
-    # clear_output(wait=True)
-    # Using a consistent image (sample_horse) so that the progress of the model
-    # is clearly visible.
-    """ Remove for local runs
-    camo_GAN.generate_images(sample_landscape)
-    camo_GAN.generate_patched_landscape(sample_landscape)
-    """
+# Hyperparameters:
+reconst_weights = [0.5] # [0.5, 1, 5]
+ls_disc_weights = [1] # add 0
+color_d_weights = [1] # [0, 1, 5] # add 0
+landscape_paths = [sky_landscape_path] # , nosky_landscape_path]
+# Load camo and benchmark first
+for landscape_path in landscape_paths:
+    train_landscape, _ = data_preprocessor(landscape_path, limit=LIMIT)
+    train_landscapes = train_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
-    if (epoch + 1) % 5 == 0:
-        # Save generated results:
-        print("Saving results")
-        camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
+    print(f'Reading Landscape images from: {landscape_path}) #;\n\
+    Camouflage images from: {camo_path};\n\
+    Benchmark landscape images from: {benchmark_path}')
+    for reconst_w in reconst_weights:
+        for ls_disc_w in ls_disc_weights:
+            for color_d_w in color_d_weights:
+                params = {
+                    'reconst': reconst_w, 
+                    'ls_disc': ls_disc_w,
+                    'color_d': color_d_w
+                }
+                # Only want one with sky
+                if 'NoSky' not in landscape_path:
+                    if not (reconst_w == 0.5 and ls_disc_w == 1 and color_d_w == 1):
+                        continue
+                model_name = get_model_name(landscape_path, camo_path, params)
+                model_name += '500'
 
-    print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
-                                                        time.time()-start))
+                # ### Tensorboard Logger:
+
+                # %load_ext tensorboard
+
+                # +
+                working_dir = 'C:/Users/mtapi/OneDrive/Documents/Brown/cs2470/Final_Project/Camo-transfer'
+                tensorboard_dir = working_dir + '/tensorboard_logs'
+                if not os.path.exists(tensorboard_dir):
+                    os.makedirs(tensorboard_dir)
+
+                tb_log_dir = tensorboard_dir + '/gradient_tape'
+                if not os.path.exists(tb_log_dir):
+                    os.makedirs(tb_log_dir)
+                    
+                model_log_dir = f'{tb_log_dir}/{model_name}'
+                if not os.path.exists(model_log_dir):
+                    os.makedirs(model_log_dir)
+                    
+                param_str = "_".join([f'{param}_{val}' for param, val in params.items()])
+                model_param_log_dir = f'{model_log_dir}/{param_str}'
+                if not os.path.exists(model_param_log_dir):
+                    os.makedirs(model_param_log_dir)
+                    
+                train_log_dir = model_param_log_dir
+
+                print(f'Tensorboard logs written to: {train_log_dir}')
+                # -
+
+                train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+
+                benchmark_images_log_dir = f'{train_log_dir}/progress_images'
+                if not os.path.exists(benchmark_images_log_dir):
+                    os.makedirs(benchmark_images_log_dir)
+
+                
+                print("Model name:", model_name)
+                print("Parameters: ", param_str)
+                n_epochs=50
+                camo_GAN = CamoGAN(OUTPUT_CHANNELS, 
+                                    params['reconst'], params['ls_disc'], params['color_d'],
+                                    train_summary_writer)
+                
+
+                for epoch in range(n_epochs):
+                    start = time.time()
+
+                    data_size = len(train_landscapes)
+                    for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
+                        step = epoch*data_size + i
+                        camo_GAN.train_step(image_x, image_y, step)
+                        if i % 10 == 0:
+                            print ('.', end='')
+
+                    # clear_output(wait=True)
+                    # Using a consistent image (sample_horse) so that the progress of the model
+                    # is clearly visible.
+                    """ Remove for local runs
+                    camo_GAN.generate_images(sample_landscape)
+                    camo_GAN.generate_patched_landscape(sample_landscape)
+                    """
+
+                    if (epoch + 1) % 5 == 0:
+                        # Save generated results:
+                        print("Saving results")
+                        camo_GAN.save_benchmark_results(epoch+1, benchmark_landscapes, benchmark_images_log_dir)
+
+                    print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
+                                                                        time.time()-start))
+
+                # After each model, give GPU a break
+                minutes = 3
+                seconds = 60*minutes
+                print(f'Sleeping for {seconds} seconds:')
+                time.sleep(seconds)
+# +
+
 
 
 # -

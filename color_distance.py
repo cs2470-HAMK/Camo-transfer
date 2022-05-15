@@ -3,11 +3,12 @@ from sklearn.cluster import KMeans
 from collections import Counter
 import numpy as np
 
-def palette_perc(img, clusters: int, verbose=False):
+def palette_perc(img, clusters: int, dim=(50, 30), verbose=False):
     # img = cv2.imread(img_path)
 #     img = img.numpy() 
 #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    dim = (500, 300) #set dim to whatever here
+    # dim = (500, 300) #set dim to whatever here
+    print("dim:", dim)
     img = tf.image.resize(img, dim)
 
     clt = KMeans(n_clusters=clusters)

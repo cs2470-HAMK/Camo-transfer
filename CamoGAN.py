@@ -161,7 +161,6 @@ class CamoGAN(tf.keras.Model):
             color_dist = 0
             if self.color_d_weight != 0:
                 color_dist = calc_color_distance(real_x, fake_y)
-                print(f"COLOR_DIST during step {step_i}: {color_dist}")
 
             # calculate the loss
             gen_g_loss = generator_loss(disc_fake_y)+ self.ls_disc_weight*generator_loss(disc_fake_x) + self.color_d_weight*color_dist# Want to fool both discriminators 
@@ -175,12 +174,14 @@ class CamoGAN(tf.keras.Model):
             disc_y_loss = discriminator_loss(disc_real_y, disc_fake_y)
             
             if self.train_summary_writer and (step_i+1) % log_freq == 0:
-                print(f"Writing to tensorboard, step_i:  {step_i+1}")
                 with self.train_summary_writer.as_default():
                     tf.summary.scalar('total_gen_g_loss', total_gen_g_loss, step=step_i)
 
                     tf.summary.scalar('disc_x_loss', disc_x_loss, step=step_i)
                     tf.summary.scalar('disc_y_loss', disc_y_loss, step=step_i)
+
+                    if self.color_d_weight != 0:
+                        tf.summary.scalar('color_distance', color_dist, step=step_i)
 
         # Calculate the gradients for generator and discriminator
         generator_g_gradients = tape.gradient(total_gen_g_loss, 
@@ -295,11 +296,11 @@ def identity_loss(real_image, same_image, loss_wieght=10):
 
 
 
-def palette_perc(img, clusters: int, verbose=False):
+def palette_perc(img, clusters: int, dim=(25, 15), verbose=False):
     # img = cv2.imread(img_path)
 #     img = img.numpy() 
 #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    dim = (500, 300) #set dim to whatever here
+    # dim = (500, 300) #set dim to whatever here
     img = tf.image.resize(img, dim)
 
     clt = KMeans(n_clusters=clusters)
