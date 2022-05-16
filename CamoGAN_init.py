@@ -291,9 +291,6 @@ for landscape_path in landscape_paths:
 # +
 
 
-
-# -
-
 '''
 def fit_hyperparameter_setting(weights, n_epochs=40):
     """

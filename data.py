@@ -7,12 +7,12 @@ import os
 import glob
 from PIL import Image
 
-def data_preprocessor(file_path, train_split=0.8, test_split=0.2, image_type='*.jpg', sort=False, shuffle=True, shuffle_size=296, limit=None):
+def data_preprocessor(file_path, train_split=0.8, test_split=0.2, sort=False, shuffle=True, filetype='*.jpg', shuffle_size=296, limit=None):
 
     #create dataframe to store image paths and images:
 
     images_dict = {os.path.splitext(os.path.basename(x))[0]: x
-                    for x in glob.glob(os.path.join(file_path, '', image_type))}
+                    for x in glob.glob(os.path.join(file_path, '', filetype))}
 
     df = pd.DataFrame(images_dict.items())
     #rename columns for clarity

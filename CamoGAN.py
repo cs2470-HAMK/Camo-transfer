@@ -174,6 +174,7 @@ class CamoGAN(tf.keras.Model):
             disc_y_loss = discriminator_loss(disc_real_y, disc_fake_y)
             
             if self.train_summary_writer and (step_i+1) % log_freq == 0:
+                print(f"Writing summary at step: {step_i + 1}")
                 with self.train_summary_writer.as_default():
                     tf.summary.scalar('total_gen_g_loss', total_gen_g_loss, step=step_i)
 

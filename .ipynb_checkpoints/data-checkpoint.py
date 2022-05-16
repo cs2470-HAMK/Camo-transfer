@@ -7,12 +7,12 @@ import os
 import glob
 from PIL import Image
 
-def data_preprocessor(file_path, limit=None):
+def data_preprocessor(file_path, train_split=0.8, test_split=0.2, sort=False, shuffle=True, filetype='*.jpg', shuffle_size=296, limit=None):
 
     #create dataframe to store image paths and images:
 
     images_dict = {os.path.splitext(os.path.basename(x))[0]: x
-                    for x in glob.glob(os.path.join(file_path, '', '*.jpg'))}
+                    for x in glob.glob(os.path.join(file_path, '', filetype))}
 
     df = pd.DataFrame(images_dict.items())
     #rename columns for clarity
@@ -30,8 +30,11 @@ def data_preprocessor(file_path, limit=None):
     inp_reshape = tf.reshape(interim_inputs, (-1, 256, 256, 3))
     train_imgs = np.asarray(inp_reshape, dtype= np.float32)
 
-    # train_imgs = tf.random.shuffle(final_inputs)
-
+    if sort:
+        train_pixs = [img[0,0,0] for img in train_imgs]
+        sorted_idxs = np.argsort(train_pixs)
+        train_imgs = train_imgs[sorted_idxs]
+    
     og_images = []
     for tensor in train_imgs:
         og_images.append(tensor)
@@ -55,12 +58,8 @@ def data_preprocessor(file_path, limit=None):
     image_dataset = tf.data.Dataset.from_tensor_slices(tensor_converted_images)
 
     ds_size = tf.data.experimental.cardinality(image_dataset)
-    train_split=0.8
-    test_split=0.2
-    shuffle_size=296
-
-    Shuffle=True
-    if Shuffle:
+    ds = image_dataset
+    if shuffle:
     # Specify seed to always have the same split distribution between runs
         ds = image_dataset.shuffle(shuffle_size, seed=12)
 
@@ -70,15 +69,4 @@ def data_preprocessor(file_path, limit=None):
     train_ds = ds.take(train_size)   
     test_ds = ds.take(test_size)
 
-    train_size_lst = []
-    for img in train_ds:
-        train_size_lst.append(img)
-
-    train_imgs_arrays = []
-    for tensor_images in train_size_lst:
-        array_img = np.asarray(tensor_images)
-        train_imgs_arrays.append(array_img)
-
-    # dark_skin_sample = train_imgs_arrays[20]
-
-    return train_ds, test_ds # , dark_skin_sample
+    return train_ds, test_ds

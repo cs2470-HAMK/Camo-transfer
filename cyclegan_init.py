@@ -39,15 +39,13 @@ BATCH_SIZE = 1
 IMG_WIDTH = 256
 IMG_HEIGHT = 256
 
-# +
 ### Data:
-LIMIT = 100
+LIMIT = 50
 train_landscape, test_landscape = data_preprocessor(landscape_path, limit=LIMIT)
 train_camo, test_camo = data_preprocessor(camo_path, limit=LIMIT)
 
-benchmark_landscapes, _ = data_preprocessor(benchmark_path, shuffle=False, limit=None)
+benchmark_landscapes, _ = data_preprocessor(benchmark_path, train_split=1.0, sort=True, shuffle=False, limit=None)
 
-# +
 train_landscapes = train_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 test_landscapes = test_landscape.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 train_camos = train_camo.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
@@ -112,7 +110,7 @@ model_name = 'cyclegan' # 'patched'; # patched_dewatermarked'; # 'patched_dewate
 
 # %load_ext tensorboard
 
-reconst_weight=10
+reconst_weight=3
 
 # +
 if not os.path.exists('tensorboard_logs'):
@@ -127,7 +125,7 @@ if not os.path.exists(model_log_dir):
     os.makedirs(model_log_dir)
     
 params = {
-    'reconst': 5
+    'reconst': reconst_weight
 }
 param_str = "_".join([f'{param}_{val}' for param, val in params.items()])
 model_param_log_dir = f'{model_log_dir}/{param_str}'
@@ -149,19 +147,17 @@ print(f'Images written to: {benchmark_images_log_dir}')
 cycle_GAN = CycleGAN(OUTPUT_CHANNELS, reconst_weight=reconst_weight, train_summary_writer=train_summary_writer)
 
 # +
-EPOCHS = 40
+EPOCHS = 25
 data_size = len(train_landscapes)
 
 for epoch in range(EPOCHS):
   start = time.time()
 
-  n = 0
   for i, (image_x, image_y) in enumerate(tf.data.Dataset.zip((train_landscapes, train_camos))):
     step = epoch*data_size + i
     cycle_GAN.train_step(image_x, image_y, step)
-    if n % 10 == 0:
+    if i % 10 == 0:
       print ('.', end='')
-    n += 1
 
   clear_output(wait=True)
   # Using a consistent image (sample_horse) so that the progress of the model
